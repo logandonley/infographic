@@ -1,0 +1,119 @@
+#!/usr/bin/groovy
+node('') {
+    // these should align to the projects in the Application Inventory
+    env.NAMESPACE = env.OPENSHIFT_BUILD_NAMESPACE.reverse().drop(6).reverse()
+    env.DEV_PROJECT = "${env.NAMESPACE}-dev"
+    env.TEST_PROJECT = "${env.NAMESPACE}-test"
+    env.UAT_PROJECT = "${env.NAMESPACE}-uat"
+
+    // this value should be set to the root directory of your source code within the git repository.
+    // if the root of the source is the root of the repo, leave this value as ""
+    env.SOURCE_CONTEXT_DIR = ""
+    env.GIT_BRANCH = scm.branches[0].name
+
+
+    env.APP_NAME = "httpd-app"
+
+    // these are defaults that will help run openshift automation
+    env.OCP_API_SERVER = "${env.OPENSHIFT_API_URL}"
+    env.OCP_TOKEN = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
+}
+
+
+node('nodejs') {
+
+    stage('SCM Checkout') {
+        checkout scm
+    }
+
+    dir("${env.SOURCE_CONTEXT_DIR}") {
+        stage('Build Image') {
+            sh "oc start-build ${env.APP_NAME} --from-dir=. --follow"
+        }
+    }
+
+    stage('Deploy to Dev') {
+        def userInput = false
+        try {
+            timeout(time: 15, unit: 'MINUTES') {
+                userInput = input(
+                        id: 'Proceed1', message: 'Promote application to DEV environment?', parameters: [
+                        [$class: 'BooleanParameterDefinition', defaultValue: false, description: '', name: 'Yes, promote to DEV?']
+                ])
+            }
+            if (userInput) {
+                openshiftTag(apiURL: "${env.OCP_API_SERVER}", authToken: "${env.OCP_TOKEN}", destStream: "${env.APP_NAME}", destTag: 'latest', destinationAuthToken: "${env.OCP_TOKEN}", destinationNamespace: "${env.DEV_PROJECT}", namespace: "${env.OPENSHIFT_BUILD_NAMESPACE}", srcStream: "${env.APP_NAME}", srcTag: 'latest')
+
+                openshiftVerifyDeployment(apiURL: "${env.OCP_API_SERVER}", authToken: "${env.OCP_TOKEN}", depCfg: "${env.APP_NAME}", namespace: "${env.DEV_PROJECT}", verifyReplicaCount: true)
+            }
+        } catch (err) {
+            def user = err.getCauses()[0].getUser()
+            if ('SYSTEM' == user.toString()) { // SYSTEM means timeout
+                echo "no input was received before timeout"
+                currentBuild.result = 'ABORTED'
+                error('Stopping early…')
+            } else {
+                echo "Aborted by: [${user}]"
+                currentBuild.result = 'ABORTED'
+                error('Stopping early…')
+            }
+        }
+    }
+
+    stage('Deploy to Test') {
+        def userInput = false
+        try {
+            timeout(time: 15, unit: 'MINUTES') {
+                userInput = input(
+                        id: 'Proceed2', message: 'Promote application to TEST environment?', parameters: [
+                        [$class: 'BooleanParameterDefinition', defaultValue: false, description: '', name: 'Yes, promote to TEST?']
+                ])
+            }
+            if (userInput) {
+                openshiftTag(apiURL: "${env.OCP_API_SERVER}", authToken: "${env.OCP_TOKEN}", destStream: "${env.APP_NAME}", destTag: 'latest', destinationAuthToken: "${env.OCP_TOKEN}", destinationNamespace: "${env.TEST_PROJECT}", namespace: "${env.DEV_PROJECT}", srcStream: "${env.APP_NAME}", srcTag: 'latest')
+
+                openshiftVerifyDeployment(apiURL: "${env.OCP_API_SERVER}", authToken: "${env.OCP_TOKEN}", depCfg: "${env.APP_NAME}", namespace: "${env.TEST_PROJECT}", verifyReplicaCount: true)
+            }
+        } catch (err) {
+            def user = err.getCauses()[0].getUser()
+            if ('SYSTEM' == user.toString()) { // SYSTEM means timeout
+                echo "no input was received before timeout"
+                currentBuild.result = 'ABORTED'
+                error('Stopping early…')
+            } else {
+                echo "Aborted by: [${user}]"
+                currentBuild.result = 'ABORTED'
+                error('Stopping early…')
+            }
+        }
+    }
+
+    stage('Deploy to UAT') {
+        def userInput = false
+        try {
+            timeout(time: 15, unit: 'MINUTES') {
+                userInput = input(
+                        id: 'Proceed3', message: 'Promote application to UAT environment?', parameters: [
+                        [$class: 'BooleanParameterDefinition', defaultValue: false, description: '', name: 'Yes, promote to UAT?']
+                ])
+            }
+            if (userInput) {
+                openshiftTag(apiURL: "${env.OCP_API_SERVER}", authToken: "${env.OCP_TOKEN}", destStream: "${env.APP_NAME}", destTag: 'latest', destinationAuthToken: "${env.OCP_TOKEN}", destinationNamespace: "${env.UAT_PROJECT}", namespace: "${env.TEST_PROJECT}", srcStream: "${env.APP_NAME}", srcTag: 'latest')
+
+                openshiftVerifyDeployment(apiURL: "${env.OCP_API_SERVER}", authToken: "${env.OCP_TOKEN}", depCfg: "${env.APP_NAME}", namespace: "${env.UAT_PROJECT}", verifyReplicaCount: true)
+            }
+        } catch (err) {
+            def user = err.getCauses()[0].getUser()
+            if ('SYSTEM' == user.toString()) { // SYSTEM means timeout
+                echo "no input was received before timeout"
+                currentBuild.result = 'ABORTED'
+                error('Stopping early…')
+            } else {
+                echo "Aborted by: [${user}]"
+                currentBuild.result = 'ABORTED'
+                error('Stopping early…')
+            }
+        }
+    }
+}
+
