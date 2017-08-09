@@ -1,4 +1,4 @@
-node('maven') {
+node('nodejs') {
     stage('Test'){
         echo "This is a test"
     }
