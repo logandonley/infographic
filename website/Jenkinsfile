@@ -5,6 +5,7 @@
  **/
 node (''){
     // these should align to the projects in the Application Inventory
+    env.OPENSHIFT_BUILD_NAMESPACE = "infographic-pipeline"
     env.DEV_PROJECT = "infographic-dev"
     env.TEST_PROJECT = "infographic-test"
     env.UAT_PROJECT = "infographic-uat"
