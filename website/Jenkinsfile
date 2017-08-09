@@ -34,6 +34,7 @@ node('nodejs') {
 
         // assumes uber jar is created
         stage('Build Image') {
+            sh "pwd"
             sh "oc start-build ${env.APP_NAME} --from-dir=. --follow"
         }
     }
