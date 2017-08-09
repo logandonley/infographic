@@ -30,15 +30,13 @@ node('nodejs') {
         checkout scm
     }
 
-    dir ("${env.SOURCE_CONTEXT_DIR}") {
-
-        // assumes uber jar is created
-        stage('Build Image') {
-            sh "env"
-            sh "pwd"
-            sh "oc start-build ${env.APP_NAME} --from-dir=website --follow"
-        }
+    // assumes uber jar is created
+    stage('Build Image') {
+        sh "env"
+        sh "pwd"
+        sh "oc start-build ${env.APP_NAME} --from-dir=website --follow"
     }
+
 
     // no user changes should be needed below this point
     stage ('Deploy to Dev') {
