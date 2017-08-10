@@ -33,7 +33,13 @@ node('nodejs') {
 
     // assumes uber jar is created
     stage('Build Image') {
-        sh "env"
+        sh "echo 'apiURL: ${env.OCP_API_SERVER}'"
+        sh "echo 'authToken: ${env.OCP_TOKEN}'"
+        sh "echo 'destStream: ${env.APP_NAME}'"
+        sh "echo 'destinationAuthToken: ${env.OCP_TOKEN}'"
+        sh "echo 'destinationNamespace: ${env.DEV_PROJECT}'"
+        sh "echo 'namespace: ${env.OPENSHIFT_BUILD_NAMESPACE}'"
+        sh "echo 'srcStream: ${env.APP_NAME}'"
         sh "pwd"
         sh "oc start-build ${env.APP_NAME} --from-dir=website --follow"
     }
