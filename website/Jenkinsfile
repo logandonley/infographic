@@ -33,14 +33,8 @@ node('nodejs') {
 
     // assumes uber jar is created
     stage('Build Image') {
-        sh "echo 'apiURL: ${env.OCP_API_SERVER}'"
-        sh "echo 'authToken: ${env.OCP_TOKEN}'"
-        sh "echo 'destStream: ${env.APP_NAME}'"
-        sh "echo 'destinationAuthToken: ${env.OCP_TOKEN}'"
-        sh "echo 'destinationNamespace: ${env.DEV_PROJECT}'"
-        sh "echo 'namespace: ${env.OPENSHIFT_BUILD_NAMESPACE}'"
-        sh "echo 'srcStream: ${env.APP_NAME}'"
         sh "pwd"
+        sh "ls"
         sh "oc start-build ${env.APP_NAME} --from-dir=website --follow"
     }
 
@@ -50,6 +44,9 @@ node('nodejs') {
         input "Promote Application to Dev?"
 
         openshiftTag (apiURL: "${env.OCP_API_SERVER}", authToken: "${env.OCP_TOKEN}", destStream: "${env.APP_NAME}", destTag: 'latest', destinationAuthToken: "${env.OCP_TOKEN}", destinationNamespace: "${env.DEV_PROJECT}", namespace: "${env.OPENSHIFT_BUILD_NAMESPACE}", srcStream: "${env.APP_NAME}", srcTag: 'latest')
+
+        openshiftTag (apiURL: "${env.OCP_API_SERVER}", authToken: "${env.OCP_TOKEN}", destStream: "${env.APP_NAME}", destTag: 'latest', destinationAuthToken: "${env.OCP_TOKEN}", destinationNamespace: "${env.DEV_PROJECT}", namespace: "${env.OPENSHIFT_BUILD_NAMESPACE}", srcStream: "${env.APP_NAME}", srcTag: 'latest')
+
 
         openshiftVerifyDeployment (apiURL: "${env.OCP_API_SERVER}", authToken: "${env.OCP_TOKEN}", depCfg: "${env.APP_NAME}", namespace: "${env.DEV_PROJECT}", verifyReplicaCount: true)
     }
