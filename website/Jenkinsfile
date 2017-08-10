@@ -35,7 +35,7 @@ node('nodejs') {
     stage('Build Image') {
         sh "pwd"
         sh "ls"
-        sh "oc start-build ${env.APP_NAME} --from-dir=website --follow"
+        sh "oc start-build ${env.APP_NAME} --from-dir=. --follow"
     }
 
 
